@@ -1,0 +1,446 @@
+--[[
+    Ak-74 Hub - Versão Rayfield UI Definitiva (Com Moderador 2 Adicionado)
+]]
+
+local Success, err = pcall(function()
+    local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
+
+    local Players = game:GetService("Players")
+    local RunService = game:GetService("RunService")
+    local TextChatService = game:GetService("TextChatService")
+    local TeleportService = game:GetService("TeleportService")
+    local LP = Players.LocalPlayer
+
+    local function Char() return LP.Character end
+    local function HRP() local c = Char(); return c and c:FindFirstChild("HumanoidRootPart") end
+    local function Hum() local c = Char(); return c and c:FindFirstChildOfClass("Humanoid") end
+
+    -- Mensagem de boas-vindas automática
+    task.spawn(function()
+        task.wait(2)
+        pcall(function()
+            local msg = string.format("Ak_74 Hub executado por %s!! Se preparem para o Tormento Sem Fim!!", LP.Name)
+            if TextChatService.ChatVersion == Enum.ChatVersion.TextChatService then
+                local channels = TextChatService.TextChannels
+                if channels and channels:FindFirstChild("RBXGeneral") then
+                    channels.RBXGeneral:SendAsync(msg)
+                end
+            else
+                LP:Chat(msg)
+            end
+        end)
+    end)
+
+    -- Janela Rayfield
+    local Window = Rayfield:CreateWindow({
+        Name = "Ak-74 Hub - Oficial",
+        LoadingTitle = "Carregando Ak-74 Hub...",
+        LoadingSubtitle = "by Ak-74",
+        ConfigurationSaving = { Enabled = false },
+        KeySystem = false
+    })
+
+    -- Abas
+    local MainTab = Window:CreateTab("Main", 4483362458)
+    local FlingTab = Window:CreateTab("Sistemas de Fling", 4483362458)
+    local CharacterTab = Window:CreateTab("Personagem", 4483362458)
+    local TpTab = Window:CreateTab("Teleporte", 4483362458)
+    local EspTab = Window:CreateTab("ESP & Visuais", 4483362458)
+    local GlobalChatTab = Window:CreateTab("Chat Global", 4483362458)
+    local AdminTab = Window:CreateTab("👑Admin", 4483362458)
+
+    -- ==================== ABA MAIN ====================
+    MainTab:CreateSection("Geral")
+
+    local function doRejoin()
+        pcall(function()
+            if #Players:GetPlayers() <= 1 then
+                TeleportService:Teleport(game.PlaceId, LP)
+            else
+                TeleportService:TeleportToPlaceInstance(game.PlaceId, game.JobId, LP)
+            end
+        end)
+    end
+
+    MainTab:CreateButton({
+        Name = "Rejoin (!rejoin / !rj)",
+        Callback = function() doRejoin() end,
+    })
+
+    MainTab:CreateButton({
+        Name = "Copiar Link do Discord",
+        Callback = function()
+            if setclipboard then
+                setclipboard("https://discord.gg/gj2cGaVdQ")
+                Rayfield:Notify({Title = "Sucesso", Content = "Discord copiado!", Duration = 3})
+            end
+        end,
+    })
+
+    local spamText = "Ak-74 Hub"
+    MainTab:CreateInput({
+        Name = "Texto do Spam",
+        PlaceholderText = "Digite o texto...",
+        RemoveTextAfterFocusLost = false,
+        Callback = function(Value) spamText = Value end,
+    })
+
+    MainTab:CreateButton({
+        Name = "Executar Spam 7x (!spam)",
+        Callback = function()
+            task.spawn(function()
+                for i = 1, 7 do
+                    pcall(function()
+                        if TextChatService.ChatVersion == Enum.ChatVersion.TextChatService then
+                            TextChatService.TextChannels.RBXGeneral:SendAsync(spamText)
+                        else
+                            LP:Chat(spamText)
+                        end
+                    end)
+                    task.wait(0.5)
+                end
+            end)
+        end,
+    })
+
+    local function getPlayerList()
+        local list = {}
+        pcall(function()
+            for _, p in ipairs(Players:GetPlayers()) do
+                if p and p ~= LP then table.insert(list, p.Name) end
+            end
+        end)
+        if #list == 0 then table.insert(list, "Nenhum jogador") end
+        return list
+    end
+
+    -- ==================== ABA FLING ====================
+    FlingTab:CreateSection("Controle de Fling")
+    local selectedTarget = "Nenhum jogador"
+
+    local DropdownFling = FlingTab:CreateDropdown({
+        Name = "Selecionar Vítima",
+        Options = getPlayerList(),
+        CurrentOption = "Nenhum jogador",
+        Callback = function(Option)
+            selectedTarget = Option[1] or Option
+        end,
+    })
+
+    FlingTab:CreateButton({
+        Name = "Atualizar Lista de Jogadores",
+        Callback = function()
+            DropdownFling:Refresh(getPlayerList())
+        end,
+    })
+
+    local normalFlingActive = false
+    FlingTab:CreateToggle({
+        Name = "Ativar Fling Normal",
+        CurrentValue = false,
+        Callback = function(Value)
+            normalFlingActive = Value
+            task.spawn(function()
+                while normalFlingActive do
+                    pcall(function()
+                        local myHRP = HRP()
+                        local target = nil
+                        for _, p in ipairs(Players:GetPlayers()) do
+                            if p and string.lower(p.Name) == string.lower(selectedTarget) then target = p break end
+                        end
+                        if myHRP and target and target.Character and target.Character:FindFirstChild("HumanoidRootPart") then
+                            myHRP.AssemblyAngularVelocity = Vector3.new(0, 10000, 0)
+                            myHRP.CFrame = target.Character.HumanoidRootPart.CFrame * CFrame.new(math.random(-1, 1), 0, math.random(-1, 1))
+                        end
+                    end)
+                    RunService.Heartbeat:Wait()
+                end
+                local myHRP = HRP()
+                if myHRP then
+                    myHRP.AssemblyLinearVelocity = Vector3.zero
+                    myHRP.AssemblyAngularVelocity = Vector3.zero
+                end
+            end)
+        end,
+    })
+
+    -- ==================== ABA PERSONAGEM ====================
+    CharacterTab:CreateSection("Ações")
+    CharacterTab:CreateToggle({
+        Name = "Invincible Fly",
+        CurrentValue = false,
+        Callback = function(Value)
+            if Value then
+                pcall(function() loadstring(game:HttpGet("https://raw.githubusercontent.com/396abc/Script/refs/heads/main/MobileFly.lua"))() end)
+            end
+        end,
+    })
+
+    CharacterTab:CreateButton({
+        Name = "Curar Personagem",
+        Callback = function()
+            local h = Hum()
+            if h then h.Health = h.MaxHealth end
+        end,
+    })
+
+    -- ==================== ABA TELEPORTE ====================
+    TpTab:CreateSection("Ferramentas de TP")
+    TpTab:CreateButton({
+        Name = "Pegar TP Tool (Clique para TP)",
+        Callback = function()
+            pcall(function()
+                local bp = LP:FindFirstChildOfClass("Backpack")
+                if not bp then return end
+                local t = Instance.new("Tool")
+                t.Name = "TP Tool"
+                t.RequiresHandle = false
+                t.Activated:Connect(function()
+                    pcall(function()
+                        local mouse = LP:GetMouse()
+                        local hrp = HRP()
+                        if hrp and mouse and mouse.Hit then 
+                            hrp.CFrame = CFrame.new(mouse.Hit.Position + Vector3.new(0, 3, 0)) 
+                        end
+                    end)
+                end)
+                t.Parent = bp
+            end)
+        end,
+    })
+
+    -- ==================== ABA ESP & VISUAIS ====================
+    EspTab:CreateSection("Visuais")
+    local espActive = false
+    local espStorage = {}
+
+    EspTab:CreateToggle({
+        Name = "ESP Completo",
+        CurrentValue = false,
+        Callback = function(Value)
+            espActive = Value
+            for _, v in pairs(espStorage) do if v then v:Destroy() end end
+            espStorage = {}
+            if not espActive then return end
+            task.spawn(function()
+                while espActive do
+                    pcall(function()
+                        for _, p in ipairs(Players:GetPlayers()) do
+                            if p and p ~= LP and p.Character then
+                                local model = p.Character
+                                if not model:FindFirstChild("AkESP") then
+                                    local head = model:FindFirstChild("Head") or model:FindFirstChildOfClass("BasePart")
+                                    if head then
+                                        local bb = Instance.new("BillboardGui")
+                                        bb.Name = "AkESP"
+                                        bb.Adornee = head
+                                        bb.Size = UDim2.new(0, 200, 0, 50)
+                                        bb.StudsOffset = Vector3.new(0, 2.5, 0)
+                                        bb.AlwaysOnTop = true
+                                        local txt = Instance.new("TextLabel")
+                                        txt.Size = UDim2.new(1, 0, 1, 0)
+                                        txt.BackgroundTransparency = 1
+                                        txt.TextColor3 = Color3.fromRGB(0, 255, 150)
+                                        txt.TextStrokeTransparency = 0
+                                        txt.TextSize = 12
+                                        txt.Text = p.Name
+                                        txt.Parent = bb
+                                        bb.Parent = head
+                                        table.insert(espStorage, bb)
+                                    end
+                                end
+                            end
+                        end
+                    end)
+                    task.wait(2)
+                end
+            end)
+        end,
+    })
+
+    -- ==================== ABA CHAT GLOBAL ====================
+    GlobalChatTab:CreateSection("Transmissão Global")
+    GlobalChatTab:CreateParagraph({Title = "Informação", Content = "Envie mensagens públicas limpas pelo Hub."})
+    
+    local globalMsgInput = "Ak-74 Hub Global"
+    GlobalChatTab:CreateInput({
+        Name = "Mensagem Global",
+        PlaceholderText = "Digite a mensagem...",
+        RemoveTextAfterFocusLost = false,
+        Callback = function(Value) globalMsgInput = Value end,
+    })
+
+    GlobalChatTab:CreateButton({
+        Name = "Enviar Mensagem Global",
+        Callback = function()
+            pcall(function()
+                if TextChatService.ChatVersion == Enum.ChatVersion.TextChatService then
+                    TextChatService.TextChannels.RBXGeneral:SendAsync(globalMsgInput)
+                else
+                    LP:Chat(globalMsgInput)
+                end
+                Rayfield:Notify({Title = "Chat Global", Content = "Mensagem enviada!", Duration = 3})
+            end)
+        end,
+    })
+
+    -- ==================== ABA ADMIN (COM MODERADOR 2) ====================
+    AdminTab:CreateSection("Painel Administrativo Restrito")
+
+    local function hasAdminAccess()
+        -- Seu ID (Dono/Mod Supremo) + ID do MR_banguela2 (Moderador 2)
+        return LP.UserId == 11897042146 or LP.UserId == 11706636038 or LP.Name == "Ak_74OutraConta" or LP.Name == "MR_banguela2"
+    end
+    LP:SetAttribute("AkHubActive", true)
+
+    local adminTargetInput = ""
+    AdminTab:CreateInput({
+        Name = "Nick do Alvo",
+        PlaceholderText = "Digite parte do nick...",
+        RemoveTextAfterFocusLost = false,
+        Callback = function(Value) adminTargetInput = Value end,
+    })
+
+    local function getTargetPlayer(namePart)
+        for _, p in ipairs(Players:GetPlayers()) do
+            if p and string.lower(p.Name):sub(1, #namePart) == string.lower(namePart) then return p end
+        end
+        return nil
+    end
+
+    local function isHubUser(player)
+        if not player then return false end
+        local successAttr, attrVal = pcall(function() return player:GetAttribute("AkHubActive") end)
+        return (successAttr and attrVal == true) or player.Name == "Ak_74OutraConta" or player.Name == "MR_banguela2"
+    end
+
+    AdminTab:CreateButton({
+        Name = "!Verify (Verificar Usuários do Hub)",
+        Callback = function()
+            pcall(function()
+                if not hasAdminAccess() then Rayfield:Notify({Title = "Acesso Negado", Content = "Sem permissão!", Duration = 3}) return end
+                local found = {}
+                for _, p in ipairs(Players:GetPlayers()) do if isHubUser(p) then table.insert(found, p.Name) end end
+                Rayfield:Notify({Title = "Verificação", Content = #found > 0 and table.concat(found, ", ") or "Nenhum user encontrado", Duration = 4})
+            end)
+        end,
+    })
+
+    AdminTab:CreateButton({
+        Name = "!Kill (Matar Alvo)",
+        Callback = function()
+            pcall(function()
+                if not hasAdminAccess() then Rayfield:Notify({Title = "Acesso Negado", Content = "Sem permissão!", Duration = 3}) return end
+                local t = getTargetPlayer(adminTargetInput)
+                if t then
+                    if not isHubUser(t) then Rayfield:Notify({Title = "Aviso", Content = t.Name .. " não é user do Ak Hub.", Duration = 4}) return end
+                    if t.Character and t.Character:FindFirstChildOfClass("Humanoid") then
+                        t.Character:FindFirstChildOfClass("Humanoid").Health = 0
+                    end
+                end
+            end)
+        end,
+    })
+
+    local kickReason = "Abuso"
+    AdminTab:CreateInput({
+        Name = "Motivo do Kick",
+        PlaceholderText = "Motivo...",
+        RemoveTextAfterFocusLost = false,
+        Callback = function(Value) kickReason = Value end,
+    })
+
+    AdminTab:CreateButton({
+        Name = "!Kick (Expulsar Alvo)",
+        Callback = function()
+            pcall(function()
+                if not hasAdminAccess() then Rayfield:Notify({Title = "Acesso Negado", Content = "Sem permissão!", Duration = 3}) return end
+                local t = getTargetPlayer(adminTargetInput)
+                if t then
+                    if not isHubUser(t) then Rayfield:Notify({Title = "Aviso", Content = t.Name .. " não é user do Ak Hub.", Duration = 4}) return end
+                    t:Kick("Expulsado do Hub: " .. kickReason)
+                end
+            end)
+        end,
+    })
+
+    AdminTab:CreateButton({
+        Name = "!Bring (Puxar Alvo até Você)",
+        Callback = function()
+            pcall(function()
+                if not hasAdminAccess() then Rayfield:Notify({Title = "Acesso Negado", Content = "Sem permissão!", Duration = 3}) return end
+                local t = getTargetPlayer(adminTargetInput)
+                if t then
+                    if not isHubUser(t) then Rayfield:Notify({Title = "Aviso", Content = t.Name .. " não é user do Ak Hub.", Duration = 4}) return end
+                    local myHRP = HRP()
+                    if myHRP and t.Character and t.Character:FindFirstChild("HumanoidRootPart") then
+                        t.Character.HumanoidRootPart.CFrame = myHRP.CFrame * CFrame.new(0, 0, -3)
+                    end
+                end
+            end)
+        end,
+    })
+
+    local controllChatActive = false
+    AdminTab:CreateToggle({
+        Name = "!ControllChat (Monitorar/Controlar Chat do Alvo)",
+        CurrentValue = false,
+        Callback = function(Value)
+            controllChatActive = Value
+            pcall(function()
+                if not hasAdminAccess() then Rayfield:Notify({Title = "Acesso Negado", Content = "Sem permissão!", Duration = 3}) return end
+                if controllChatActive then
+                    Rayfield:Notify({Title = "ControllChat", Content = "Ativado! Monitorando falas do alvo...", Duration = 3})
+                    local target = getTargetPlayer(adminTargetInput)
+                    if target then
+                        target.Chatted:Connect(function(msg)
+                            if controllChatActive then
+                                Rayfield:Notify({Title = "Chat de " .. target.Name, Content = msg, Duration = 5})
+                            end
+                        end)
+                    end
+                else
+                    Rayfield:Notify({Title = "ControllChat", Content = "Desativado.", Duration = 3})
+                end
+            end)
+        end,
+    })
+
+    -- ==================== COMANDOS VIA CHAT GERAL ====================
+    LP.Chatted:Connect(function(message)
+        pcall(function()
+            local args = string.split(message, " ")
+            local cmd = string.lower(args[1] or "")
+            if cmd == "!rejoin" or cmd == "!rj" then
+                doRejoin()
+            elseif cmd == "!spam" then
+                table.remove(args, 1)
+                local customMsg = table.concat(args, " ")
+                if customMsg == "" then customMsg = "Ak-74 Hub" end
+                task.spawn(function()
+                    for i = 1, 7 do
+                        pcall(function()
+                            if TextChatService.ChatVersion == Enum.ChatVersion.TextChatService then
+                                TextChatService.TextChannels.RBXGeneral:SendAsync(customMsg)
+                            else
+                                LP:Chat(customMsg)
+                            end
+                        end)
+                        task.wait(0.5)
+                    end
+                end)
+            end
+        end)
+    end)
+
+    Rayfield:Notify({
+        Title = "Ak-74 Hub",
+        Content = "Moderador 2 (MR_banguela2) adicionado com sucesso!",
+        Duration = 3,
+        Image = 4483362458,
+    })
+end)
+
+if not Success then
+    warn("Erro crítico: " .. tostring(err))
+end
